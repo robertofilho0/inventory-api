@@ -80,8 +80,8 @@ describe('Produtos', () => {
   });
 
   it('filtra, busca e pagina', async () => {
-    const a = await criarCategoria('A');
-    const b = await criarCategoria('B');
+    const a = await criarCategoria('Periféricos');
+    const b = await criarCategoria('Monitores');
     await criarProduto(a.id, { name: 'Mouse', sku: 'MS-1', price: 50, quantity: 1 });
     await criarProduto(a.id, { name: 'Teclado', sku: 'TC-1', price: 150 });
     await criarProduto(b.id, { name: 'Monitor', sku: 'MN-1', price: 900 });
