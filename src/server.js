@@ -1,20 +1,28 @@
-const express = require('express');
-const dotenv = require('dotenv');
-const morgan = require('morgan');
-const cors = require('cors');
-const connectDB = require('./config/db');
+const app = require('./app');
+const env = require('./config/env');
+const { connectDB, disconnectDB } = require('./config/db');
 
-dotenv.config();
-connectDB();
+async function start() {
+  await connectDB(env.MONGO_URI);
 
-const app = express();
-app.use(express.json());
-app.use(cors());
-app.use(morgan('dev'));
+  const server = app.listen(env.PORT, () => {
+    console.log(`🚀 API rodando em http://localhost:${env.PORT}`);
+    console.log(`📚 Documentação em http://localhost:${env.PORT}/docs`);
+  });
 
-// Rotas
-app.use('/api/categories', require('./routes/categoryRoutes'));
-app.use('/api/products', require('./routes/productRoutes'));
+  const shutdown = (signal) => {
+    console.log(`\n${signal} recebido. Encerrando...`);
+    server.close(async () => {
+      await disconnectDB();
+      process.exit(0);
+    });
+  };
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 Servidor rodando na porta ${PORT}`));
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
+}
+
+start().catch((err) => {
+  console.error('❌ Falha ao iniciar a aplicação:', err);
+  process.exit(1);
+});
