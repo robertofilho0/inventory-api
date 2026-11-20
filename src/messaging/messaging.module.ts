@@ -7,7 +7,7 @@ import type { Env } from '../config/env.js';
 import { EventPublisher } from './event-publisher.js';
 import { InMemoryPublisher } from './in-memory.publisher.js';
 import { RabbitMqPublisher } from './rabbitmq.publisher.js';
-import { rmqOptions } from './rmq-options.js';
+import { rmqClientOptions } from './rmq-options.js';
 
 @Module({
   imports: [AlertsModule],
@@ -20,7 +20,7 @@ import { rmqOptions } from './rmq-options.js';
         if (!url) return new InMemoryPublisher(alerts);
         const queue = config.get('RABBITMQ_QUEUE', { infer: true });
         return new RabbitMqPublisher(
-          ClientProxyFactory.create(rmqOptions(url, queue)),
+          ClientProxyFactory.create(rmqClientOptions(url, queue)),
         );
       },
     },

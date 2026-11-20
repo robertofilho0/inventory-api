@@ -1,7 +1,7 @@
 import { Logger, type INestApplication } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Env } from '../config/env.js';
-import { rmqOptions } from './rmq-options.js';
+import { rmqConsumerOptions } from './rmq-options.js';
 
 /** Conecta o consumer RabbitMQ à aplicação HTTP (app híbrida), se configurado. */
 export async function connectBroker(app: INestApplication): Promise<void> {
@@ -15,7 +15,7 @@ export async function connectBroker(app: INestApplication): Promise<void> {
     return;
   }
   app.connectMicroservice(
-    rmqOptions(url, config.get('RABBITMQ_QUEUE', { infer: true })),
+    rmqConsumerOptions(url, config.get('RABBITMQ_QUEUE', { infer: true })),
   );
   await app.startAllMicroservices();
   Logger.log('Consumer RabbitMQ conectado', 'Messaging');
