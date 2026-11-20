@@ -4,24 +4,40 @@ services:
     ports:
       - '5000:5000'
     environment:
-      PORT: 5000
-      MONGO_URI: mongodb://mongo:27017/inventory-api
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/inventory
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
     depends_on:
-      mongo:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     restart: unless-stopped
 
-  mongo:
-    image: mongo:7
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: inventory
     ports:
-      - '27017:27017'
+      - '5432:5432'
     volumes:
-      - mongo-data:/data/db
+      - pg-data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD', 'mongosh', '--quiet', '--eval', "db.adminCommand('ping')"]
-      interval: 10s
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    ports:
+      - '5672:5672'
+      - '15672:15672' # painel: http://localhost:15672 (guest/guest)
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', '-q', 'ping']
+      interval: 10s
+      timeout: 10s
+      retries: 10
 
 volumes:
-  mongo-data:
+  pg-data:

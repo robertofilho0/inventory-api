@@ -1,0 +1,76 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum MovementType {
+  IN
+  OUT
+  ADJUSTMENT
+}
+
+model Category {
+  id          String    @id @default(uuid()) @db.Uuid
+  name        String    @unique @db.VarChar(60)
+  description String?   @db.VarChar(300)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  products    Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id          String          @id @default(uuid()) @db.Uuid
+  sku         String          @unique @db.VarChar(30)
+  name        String          @db.VarChar(120)
+  description String?
+  /// Preço em centavos, para evitar erros de arredondamento
+  priceCents  Int             @map("price_cents")
+  quantity    Int             @default(0)
+  minStock    Int             @default(0) @map("min_stock")
+  active      Boolean         @default(true)
+  categoryId  String          @map("category_id") @db.Uuid
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+  category    Category        @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  movements   StockMovement[]
+  alerts      StockAlert[]
+
+  @@index([categoryId])
+  @@map("products")
+}
+
+model StockMovement {
+  id               String       @id @default(uuid()) @db.Uuid
+  productId        String       @map("product_id") @db.Uuid
+  type             MovementType
+  quantity         Int
+  previousQuantity Int          @map("previous_quantity")
+  newQuantity      Int          @map("new_quantity")
+  reason           String?      @db.VarChar(200)
+  createdAt        DateTime     @default(now()) @map("created_at")
+  product          Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, createdAt])
+  @@map("stock_movements")
+}
+
+/// Alerta gerado pelo consumer do evento `stock.low` (RabbitMQ)
+model StockAlert {
+  id             String    @id @default(uuid()) @db.Uuid
+  productId      String    @map("product_id") @db.Uuid
+  quantity       Int
+  minStock       Int       @map("min_stock")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  acknowledgedAt DateTime? @map("acknowledged_at")
+  product        Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([acknowledgedAt])
+  @@map("stock_alerts")
+}
